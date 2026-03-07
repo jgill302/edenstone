@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArchetypeVisual } from "./archetype-visual";
 
 interface Question {
   id: string;
@@ -73,6 +75,7 @@ interface Archetype {
   name: string;
   tagline: string;
   description: string;
+  image: string;
 }
 
 function getArchetype(answers: Record<string, string>): Archetype {
@@ -84,6 +87,7 @@ function getArchetype(answers: Record<string, string>): Archetype {
       tagline: "Silence as design material",
       description:
         "Your ideal space is defined by what it leaves out. Raked gravel, carefully placed stone, and deliberate emptiness create a visual quiet that mirrors the mental state you are seeking. In Austin's heat, dry gardens like this are not just beautiful -- they are deeply practical.",
+      image: "/images/archetype-zen-courtyard.jpg",
     };
   }
 
@@ -93,6 +97,7 @@ function getArchetype(answers: Record<string, string>): Archetype {
       tagline: "Sound as sanctuary",
       description:
         "Subtle water sounds introduce non-repeating natural noise, helping your nervous system shift out of alert mode. A stone basin, a slow stream, or a simple overflow -- water becomes the heartbeat of your outdoor space. In Austin, moving water also cools surrounding air.",
+      image: "/images/archetype-water-garden.jpg",
     };
   }
 
@@ -102,6 +107,7 @@ function getArchetype(answers: Record<string, string>): Archetype {
       tagline: "Togetherness through restraint",
       description:
         "Not every garden is solitary. Your space is designed for slow gatherings -- warm wood seating, natural stone underfoot, and plantings that create gentle boundaries without walls. The design still follows restraint: every element earns its place.",
+      image: "/images/archetype-gathering-terrace.jpg",
     };
   }
 
@@ -111,6 +117,7 @@ function getArchetype(answers: Record<string, string>): Archetype {
       tagline: "Nature as nervous system reset",
       description:
         "Your ideal garden leans into the natural landscape of central Texas, working with native grasses, weathered stone, and shade trees to create a space that feels like it has always been there. Restoration comes from immersion, not decoration.",
+      image: "/images/archetype-contemplation-garden.jpg",
     };
   }
 
@@ -119,13 +126,16 @@ function getArchetype(answers: Record<string, string>): Archetype {
     tagline: "Warmth meets discipline",
     description:
       "The warmth of Scandinavian craft meets Japanese restraint. Clean lines, natural wood, intentional greenery, and a balance between cozy and minimal. Your space bridges indoor comfort with outdoor calm -- perfect for Austin's mild winters.",
+    image: "/images/archetype-japandi-retreat.jpg",
   };
 }
 
 export function DirectionFinder() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<Archetype | null>(null);
+  const [contactInitiated, setContactInitiated] = useState(false);
 
   const isComplete = step >= questions.length;
   const current = questions[step];
@@ -155,33 +165,75 @@ export function DirectionFinder() {
   }
 
   if (isComplete && result) {
+    if (contactInitiated) {
+      return (
+        <div className="mx-auto max-w-2xl px-6 py-24 text-center md:py-32 space-y-6">
+          <p className="mb-2 text-xs tracking-[0.3em] uppercase text-gold animate-fade-in">
+            Next Steps
+          </p>
+          <h2 className="font-serif text-3xl text-ink md:text-4xl animate-fade-in-up">
+            Let's Make It Real
+          </h2>
+          <p className="mx-auto max-w-lg text-base leading-relaxed text-ink/60 animate-fade-in-up">
+            We've sent you everything you need. Reply with your address, photos of your space, and budget band — we'll come back with a first direction.
+          </p>
+          <div className="mt-12 flex flex-col items-center gap-4 animate-fade-in-up sm:flex-row sm:justify-center">
+            <button
+              onClick={handleReset}
+              className="inline-flex rounded-lg bg-gold px-8 py-3.5 text-sm font-medium tracking-wide text-evergreen transition-all duration-300 hover:bg-champagne"
+            >
+              Discover Another Direction
+            </button>
+            <Link
+              href="/blog"
+              className="inline-flex rounded-lg border border-ink/20 bg-transparent px-8 py-3.5 text-sm font-medium tracking-wide text-ink transition-all duration-300 hover:border-gold hover:text-gold"
+            >
+              Read Our Philosophy
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="mx-auto max-w-2xl px-6 py-24 text-center md:py-32">
-        <p className="mb-2 text-xs tracking-[0.3em] uppercase text-gold animate-fade-in">
-          Your Direction
-        </p>
-        <h2 className="font-serif text-4xl text-ink md:text-5xl animate-fade-in-up">
-          {result.name}
-        </h2>
-        <p className="mt-4 font-serif text-lg italic text-ink/50 animate-fade-in-up">
-          {result.tagline}
-        </p>
-        <p className="mx-auto mt-8 max-w-lg text-base leading-relaxed text-ink/60 animate-fade-in-up">
-          {result.description}
-        </p>
-        <div className="mt-12 flex flex-col items-center gap-4 animate-fade-in-up sm:flex-row sm:justify-center">
-          <Link
-            href="/contact"
-            className="inline-flex rounded-lg bg-gold px-8 py-3.5 text-sm font-medium tracking-wide text-evergreen transition-all duration-300 hover:bg-champagne"
-          >
-            Start a Conversation
-          </Link>
+      <div className="mx-auto max-w-2xl px-6 py-24 md:py-32 space-y-8">
+        {/* Result Header */}
+        <div className="text-center">
+          <p className="mb-2 text-xs tracking-[0.3em] uppercase text-gold animate-fade-in">
+            Your Direction
+          </p>
+          <h2 className="font-serif text-4xl text-ink md:text-5xl animate-fade-in-up">
+            {result.name}
+          </h2>
+          <p className="mt-4 font-serif text-lg italic text-ink/50 animate-fade-in-up">
+            {result.tagline}
+          </p>
+        </div>
+
+        {/* Visual Representation */}
+        <div className="animate-fade-in-up">
+          <ArchetypeVisual
+            archetypeName={result.name}
+            imageUrl={result.image}
+            description={result.description}
+            onCTA={() => setContactInitiated(true)}
+          />
+        </div>
+
+        {/* Alternative Actions */}
+        <div className="flex flex-col gap-3 pt-6 border-t border-border md:flex-row md:justify-center">
           <button
             onClick={handleReset}
             className="inline-flex rounded-lg border border-ink/20 bg-transparent px-8 py-3.5 text-sm font-medium tracking-wide text-ink transition-all duration-300 hover:border-gold hover:text-gold"
           >
-            Retake
+            Retake Quiz
           </button>
+          <Link
+            href="/materials"
+            className="inline-flex rounded-lg bg-transparent px-8 py-3.5 text-sm font-medium tracking-wide text-ink border border-ink/20 transition-all duration-300 hover:border-gold hover:text-gold"
+          >
+            Explore Materials
+          </Link>
         </div>
       </div>
     );
