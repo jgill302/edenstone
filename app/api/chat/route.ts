@@ -1,9 +1,4 @@
-import {
-  consumeStream,
-  convertToModelMessages,
-  streamText,
-  type UIMessage,
-} from "ai";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
 export const maxDuration = 30;
 
@@ -47,8 +42,5 @@ export async function POST(req: Request) {
     abortSignal: req.signal,
   });
 
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    consumeSseStream: consumeStream,
-  });
+  return result.toUIMessageStreamResponse();
 }
