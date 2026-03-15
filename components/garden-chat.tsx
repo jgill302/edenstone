@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { useChat } from "ai/react";
 
 const suggestions = [
   "Why do water features reduce anxiety?",
@@ -13,14 +12,11 @@ const suggestions = [
 
 export function GardenChat() {
   const [isOpen, setIsOpen] = useState(false);
-  const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  const { messages, input, setInput, handleSubmit, isLoading } = useChat({
+    api: "/api/chat",
   });
-
-  const isLoading = status === "streaming" || status === "submitted";
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -30,8 +26,12 @@ export function GardenChat() {
 
   function handleSend(text: string) {
     if (!text.trim() || isLoading) return;
-    sendMessage({ text });
-    setInput("");
+    setInput(text);
+    // Trigger submit on next tick after input is set
+    setTimeout(() => {
+      const form = document.querySelector("form[data-chat-form]") as HTMLFormElement;
+      if (form) form.requestSubmit();
+    }, 0);
   }
 
   return (
@@ -116,12 +116,7 @@ export function GardenChat() {
                           : "bg-ink/5 text-ink/70"
                       }`}
                     >
-                      {message.parts.map((part, i) => {
-                        if (part.type === "text") {
-                          return <span key={i}>{part.text}</span>;
-                        }
-                        return null;
-                      })}
+                      {message.content}
                     </div>
                   </div>
                 ))}
@@ -147,14 +142,13 @@ export function GardenChat() {
 
           {/* Input */}
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend(input);
-            }}
+            data-chat-form
+            onSubmit={handleSubmit}
             className="border-t border-ink/10 px-4 py-3"
           >
             <div className="flex items-center gap-2">
               <input
+                name="prompt"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about gardens..."
