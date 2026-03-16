@@ -8,7 +8,50 @@ interface InvestmentEstimatorProps {
   onComplete: (estimate: string, size: string, timeline: string) => void;
 }
 
-// Base prices by archetype (luxury positioning)
+// Project scope options
+const scopeOptions = [
+  {
+    value: "refresh",
+    label: "Garden Refresh",
+    price: "$3,500 – $8,000",
+    description: "Thoughtful improvements to an existing space",
+    features: [
+      "Design consultation and concept sketch",
+      "Curated plant refresh with zen-appropriate species",
+      "One signature element (stone grouping, lantern, or basin)",
+      "Gravel or mulch refresh",
+      "Basic hardscape touch-ups",
+    ],
+  },
+  {
+    value: "essentials",
+    label: "Zen Essentials",
+    price: "$8,000 – $18,000",
+    description: "A focused transformation of a single area",
+    features: [
+      "Full design concept for one zone",
+      "Premium plant installation",
+      "2-3 curated ornamental elements",
+      "New gravel garden or pathway",
+      "Small water feature option",
+    ],
+  },
+  {
+    value: "transformation",
+    label: "Full Transformation",
+    price: "$18,000+",
+    description: "Complete garden design and installation",
+    features: [
+      "Comprehensive design with material specs",
+      "Premium natural materials for Austin climate",
+      "Authentic Japanese ornaments and stone",
+      "Professional installation by vetted craftsmen",
+      "90-day establishment period support",
+    ],
+  },
+];
+
+// Base prices by archetype for full transformation (luxury positioning)
 const archetypeBasePrices: Record<string, { min: number; max: number }> = {
   "Zen Courtyard": { min: 18000, max: 45000 },
   "Water Garden": { min: 28000, max: 75000 },
@@ -17,7 +60,7 @@ const archetypeBasePrices: Record<string, { min: number; max: number }> = {
   "Japandi Retreat": { min: 32000, max: 85000 },
 };
 
-// Size multipliers
+// Size multipliers for full transformation
 const sizeMultipliers: Record<string, number> = {
   intimate: 1.0, // Under 300 sq ft
   modest: 1.4, // 300-600 sq ft
@@ -35,6 +78,7 @@ const featureAdditions: Record<string, number> = {
   low_maintenance: 5000, // Automated irrigation, hardy plants
 };
 
+// Size options for full transformation
 const sizeOptions = [
   {
     value: "intimate",
