@@ -1,9 +1,5 @@
-import {
-  consumeStream,
-  convertToModelMessages,
-  streamText,
-  type UIMessage,
-} from "ai";
+import { streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
 
 export const maxDuration = 30;
 
@@ -38,17 +34,13 @@ Your tone is:
 Keep responses concise -- 2-4 paragraphs maximum unless the question requires more depth. End with a gentle follow-up thought or question when natural, but never a hard sell.`;
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  const { messages } = await req.json();
 
   const result = streamText({
-    model: "openai/gpt-4o-mini",
+    model: openai("gpt-4o-mini"),
     system: systemPrompt,
-    messages: await convertToModelMessages(messages),
-    abortSignal: req.signal,
+    messages,
   });
 
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    consumeSseStream: consumeStream,
-  });
+  return result.toDataStreamResponse();
 }

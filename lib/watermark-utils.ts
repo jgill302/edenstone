@@ -1,5 +1,3 @@
-'use client'
-
 export async function addWatermarkToImage(
   imageSrc: string,
   watermarkText: string = 'Gestalt Gardens'

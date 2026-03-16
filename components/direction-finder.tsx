@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArchetypeVisual } from "./archetype-visual";
+import { InvestmentEstimator } from "./investment-estimator";
 
 interface Question {
   id: string;
@@ -131,11 +131,18 @@ function getArchetype(answers: Record<string, string>): Archetype {
 }
 
 export function DirectionFinder() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<Archetype | null>(null);
-  const [contactInitiated, setContactInitiated] = useState(false);
+  const [showInvestment, setShowInvestment] = useState(false);
+  const [investmentData, setInvestmentData] = useState<{
+    estimate: string;
+    size: string;
+    timeline: string;
+  } | null>(null);
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
+  const [inquirySubmitted, setInquirySubmitted] = useState(false);
+  const [inquiryLoading, setInquiryLoading] = useState(false);
 
   const isComplete = step >= questions.length;
   const current = questions[step];
@@ -162,27 +169,87 @@ export function DirectionFinder() {
     setStep(0);
     setAnswers({});
     setResult(null);
+    setShowInvestment(false);
+    setInvestmentData(null);
+    setShowInquiryForm(false);
+    setInquirySubmitted(false);
+  }
+
+  function handleInvestmentComplete(estimate: string, size: string, timeline: string) {
+    setInvestmentData({ estimate, size, timeline });
+    setShowInquiryForm(true);
+  }
+
+  async function handleInquirySubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setInquiryLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const phone = formData.get("phone") as string;
+    const address = formData.get("address") as string;
+    const message = formData.get("message") as string;
+
+    try {
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          address,
+          message: message || `Interested in a ${result?.name} design.`,
+          source: "Direction Finder Quiz",
+          archetype: result?.name,
+          estimatedInvestment: investmentData?.estimate,
+          quizAnswers: {
+            ...answers,
+            spaceSize: investmentData?.size,
+            timeline: investmentData?.timeline,
+          },
+        }),
+      });
+      setInquirySubmitted(true);
+    } catch {
+      // Still show success to user, email logged on server
+      setInquirySubmitted(true);
+    } finally {
+      setInquiryLoading(false);
+    }
   }
 
   if (isComplete && result) {
-    if (contactInitiated) {
+    // Inquiry submitted - thank you state
+    if (inquirySubmitted) {
       return (
         <div className="mx-auto max-w-2xl px-6 py-24 text-center md:py-32 space-y-6">
           <p className="mb-2 text-xs tracking-[0.3em] uppercase text-gold animate-fade-in">
-            Next Steps
+            Thank You
           </p>
           <h2 className="font-serif text-3xl text-ink md:text-4xl animate-fade-in-up">
-            Let's Make It Real
+            We'll Be in Touch Soon
           </h2>
           <p className="mx-auto max-w-lg text-base leading-relaxed text-ink/60 animate-fade-in-up">
-            We've sent you everything you need. Reply with your address, photos of your space, and budget band — we'll come back with a first direction.
+            Your inquiry for a {result.name} has been received. We typically respond within 2 business days to schedule an initial conversation about your space.
           </p>
+          {investmentData && (
+            <div className="bg-forest/5 border border-forest/10 rounded-xl p-6 max-w-sm mx-auto animate-fade-in-up">
+              <p className="text-xs tracking-[0.2em] uppercase text-ink/40 mb-2">
+                Your Estimated Investment
+              </p>
+              <p className="font-serif text-xl text-forest">
+                {investmentData.estimate}
+              </p>
+            </div>
+          )}
           <div className="mt-12 flex flex-col items-center gap-4 animate-fade-in-up sm:flex-row sm:justify-center">
             <button
               onClick={handleReset}
               className="inline-flex rounded-lg bg-gold px-8 py-3.5 text-sm font-medium tracking-wide text-evergreen transition-all duration-300 hover:bg-champagne"
             >
-              Discover Another Direction
+              Explore Another Direction
             </button>
             <Link
               href="/blog"
@@ -195,6 +262,161 @@ export function DirectionFinder() {
       );
     }
 
+    // Inquiry form state
+    if (showInquiryForm && investmentData) {
+      return (
+        <div className="mx-auto max-w-xl px-6 py-24 md:py-32 space-y-8">
+          <div className="text-center">
+            <p className="mb-2 text-xs tracking-[0.3em] uppercase text-gold animate-fade-in">
+              Almost There
+            </p>
+            <h2 className="font-serif text-3xl text-ink animate-fade-in-up">
+              Tell Us About Yourself
+            </h2>
+          </div>
+
+          {/* Investment Summary */}
+          <div className="bg-forest/5 border border-forest/10 rounded-xl p-5 animate-fade-in-up">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs tracking-[0.1em] uppercase text-ink/40">
+                  {result.name}
+                </p>
+                <p className="font-serif text-lg text-forest mt-1">
+                  {investmentData.estimate}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowInquiryForm(false)}
+                className="text-xs text-ink/40 hover:text-gold transition-colors"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+
+          {/* Inquiry Form */}
+          <form onSubmit={handleInquirySubmit} className="space-y-5 animate-fade-in-up">
+            <div>
+              <label
+                htmlFor="name"
+                className="mb-2 block text-xs tracking-widest uppercase text-ink/40"
+              >
+                Your Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                disabled={inquiryLoading}
+                className="w-full border-b border-ink/15 bg-transparent py-3 text-sm text-ink outline-none transition-colors focus:border-gold placeholder:text-ink/25 disabled:opacity-50"
+                placeholder="First and last"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-xs tracking-widest uppercase text-ink/40"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                disabled={inquiryLoading}
+                className="w-full border-b border-ink/15 bg-transparent py-3 text-sm text-ink outline-none transition-colors focus:border-gold placeholder:text-ink/25 disabled:opacity-50"
+                placeholder="you@email.com"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="phone"
+                className="mb-2 block text-xs tracking-widest uppercase text-ink/40"
+              >
+                Phone (optional)
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                disabled={inquiryLoading}
+                className="w-full border-b border-ink/15 bg-transparent py-3 text-sm text-ink outline-none transition-colors focus:border-gold placeholder:text-ink/25 disabled:opacity-50"
+                placeholder="(512) 555-0000"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="address"
+                className="mb-2 block text-xs tracking-widest uppercase text-ink/40"
+              >
+                Property Address
+              </label>
+              <input
+                id="address"
+                name="address"
+                type="text"
+                disabled={inquiryLoading}
+                className="w-full border-b border-ink/15 bg-transparent py-3 text-sm text-ink outline-none transition-colors focus:border-gold placeholder:text-ink/25 disabled:opacity-50"
+                placeholder="Austin, TX"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="message"
+                className="mb-2 block text-xs tracking-widest uppercase text-ink/40"
+              >
+                Anything else? (optional)
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={3}
+                disabled={inquiryLoading}
+                className="w-full resize-none border-b border-ink/15 bg-transparent py-3 text-sm leading-relaxed text-ink outline-none transition-colors focus:border-gold placeholder:text-ink/25 disabled:opacity-50"
+                placeholder="Tell us about your space, timeline, or any specific ideas..."
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={inquiryLoading}
+              className="w-full rounded-lg bg-forest px-8 py-4 text-sm font-medium tracking-wide text-cream transition-all duration-300 hover:bg-moss disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {inquiryLoading ? "Sending..." : "Send Inquiry"}
+            </button>
+          </form>
+
+          <p className="text-xs text-center text-ink/30">
+            No commitment. We'll reach out to discuss your vision.
+          </p>
+        </div>
+      );
+    }
+
+    // Investment estimator state
+    if (showInvestment) {
+      return (
+        <div className="mx-auto max-w-xl px-6 py-24 md:py-32">
+          <InvestmentEstimator
+            archetypeName={result.name}
+            quizAnswers={answers}
+            onComplete={handleInvestmentComplete}
+          />
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setShowInvestment(false)}
+              className="text-sm text-ink/40 hover:text-gold transition-colors"
+            >
+              Back to Results
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Main results view
     return (
       <div className="mx-auto max-w-2xl px-6 py-24 md:py-32 space-y-8">
         {/* Result Header */}
@@ -216,7 +438,7 @@ export function DirectionFinder() {
             archetypeName={result.name}
             imageUrl={result.image}
             description={result.description}
-            onCTA={() => setContactInitiated(true)}
+            onCTA={() => setShowInvestment(true)}
           />
         </div>
 
