@@ -110,13 +110,13 @@ export function ArchetypeVisual({
         <div className="pt-6 border-t border-border space-y-4">
           <div className="text-center">
             <p className="text-sm text-ink/40 mb-4">
-              Love this direction? Let's bring it to life.
+              Ready to see what this could look like for your space?
             </p>
             <button
               onClick={onCTA}
               className="inline-flex rounded-lg bg-forest px-10 py-3.5 text-sm font-medium tracking-wide text-cream transition-all duration-300 hover:bg-moss"
             >
-              Start Your Garden Journey
+              See Investment Overview
             </button>
           </div>
         </div>
